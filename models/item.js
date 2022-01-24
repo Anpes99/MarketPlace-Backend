@@ -8,7 +8,8 @@ const itemSchema = new mongoose.Schema(
     subCategory: String,
     desc: String,
     price: Number,
-    premium: { type: mongoose.Schema.Types.ObjectId, ref: "premiumVisibility" },
+    isPremium: Boolean,
+    premium: { subscriptionHours: Number, date: Date },
     location: String,
     img: {
       data: Buffer,

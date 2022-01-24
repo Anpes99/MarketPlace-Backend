@@ -6,7 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const { json } = require("body-parser");
 const jwt = require("jsonwebtoken");
-const premiumVisibility = require("../models/premiumVisibility");
+const { shuffle } = require("../utils/utils");
 
 var storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -76,7 +76,13 @@ itemRouter.post("/", upload.single("image"), (req, res, next) => {
 itemRouter.get("/", async (req, res) => {
   let location = req.query.location;
   let category = req.query.category;
-  let count = req.query.count;
+  let premium = req.query.premium;
+  let limit = req.query.limit;
+  let fields = req.query.fields;
+  let sort = req.query.sort;
+  let random = req.query.random;
+  fields = fields ? fields.split(",") : fields;
+  console.log("fields:   ", fields);
   console.log(req.query);
 
   params = {};
@@ -84,20 +90,26 @@ itemRouter.get("/", async (req, res) => {
     sort: { createdAt: "desc" },
     populate: "user",
     page: req.query.page || 1,
-    limit: 10,
     collation: {
       locale: "en",
     },
   };
   if (location) params.location = location;
   if (category) params.category = category;
+  if (premium) params.isPremium = true;
+  if (random) options.limit = 5000;
+  else {
+    options.limit = limit || 10;
+  }
+  if (fields) options.select = fields;
 
-  if (count) options.limit = count;
+  console.log("sort ", sort);
+  if (sort) options.sort = sort.replace(/,/g, " "); // descending example: &sort=-location,
 
   let items;
   console.log(params);
 
-  await Item.paginate(params, options, (err, result) => {
+  await Item.paginate(params, options, async (err, result) => {
     console.log("error", err);
     //result.docs
     // result.totalDocs = 100
@@ -111,6 +123,29 @@ itemRouter.get("/", async (req, res) => {
     // result.pagingCounter = 1
     console.log("res: ", result);
     try {
+      ///////////////////////////////////////////////////////////////////////
+      ///////////////// deletes expired premium items
+      if (premium) {
+        let timeNow = new Date();
+        for (const premItem of result.docs) {
+          let subscriptionAllowance =
+            premItem.premium.subscriptionHours * 3600000;
+          let createdAt = new Date(premItem.premium.date);
+
+          const timeAlive = timeNow.getTime() - createdAt.getTime();
+
+          if (timeAlive > subscriptionAllowance) {
+            console.log("timealive    ", timeAlive);
+            console.log("allowance     ", subscriptionAllowance);
+            await Item.findByIdAndUpdate(premItem._id, { isPremium: false });
+            result.docs = result.docs.filter(
+              (item) => premItem._id !== item._id
+            );
+          }
+        }
+      }
+      ////////////////////////////////////////////////////////////////////////////
+      ////////////// deletes   unwanted user fields
       result.docs = result.docs.map((doc) => {
         if (doc.user) {
           doc.user.items = null;
@@ -118,7 +153,18 @@ itemRouter.get("/", async (req, res) => {
         }
         return doc;
       });
-      res.json(result);
+
+      if (premium && random) {
+        ///  shuffles and returns premium items with limit
+        result.docs = shuffle(result.docs);
+        result.docs = result.docs.slice(
+          0,
+          req.query.limit ? req.query.limit : 10
+        );
+        return res.json(result.docs);
+      }
+
+      return res.json(result);
     } catch (error) {
       console.log(error);
       res.json(error);
@@ -132,7 +178,7 @@ itemRouter.get("/:itemId", (req, res) => {
     .populate("user")
     .then((result) => {
       console.log(result);
-      res.json(result);
+      return res.json(result);
     });
 });
 
@@ -142,7 +188,7 @@ itemRouter.get("/user/:username", async (req, res) => {
   const userItems = await Item.find({ user: user._id });
   //console.log("user items found :  ",userItems)
 
-  res.json(userItems);
+  return res.json(userItems);
 });
 
 itemRouter.delete("/:itemId", async (req, res) => {
@@ -150,13 +196,13 @@ itemRouter.delete("/:itemId", async (req, res) => {
   await Item.deleteMany({});
   const result = await Item.findByIdAndDelete(req.params.itemId);
 
-  res.status(204).end();
+  return res.status(204).end();
 });
 
 itemRouter.delete("/", async (req, res) => {
   await Item.deleteMany({});
 
-  res.status(204).end();
+  return res.status(204).end();
 });
 
 module.exports = itemRouter;

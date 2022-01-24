@@ -10,7 +10,7 @@ const userSchema = mongoose.Schema({
   items: [{ type: mongoose.Schema.Types.ObjectId, ref: "Item" }],
   name: String,
   passwordHash: String,
-  //favourites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Item" }]
+  favourites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Item" }],
 });
 
 userSchema.set("toJSON", {
