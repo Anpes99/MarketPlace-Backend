@@ -20,8 +20,14 @@ var storage = multer.diskStorage({
 var upload = multer({ storage: storage });
 
 itemRouter.post("/", upload.single("image"), (req, res, next) => {
+  console.log("gfdsfdgsdfgfsd");
+  console.log("token:  @@@@@@@@@@@@@@@@@", req.token);
   jwt.verify(req.token, process.env.SECRET, (err, decoded) => {
+    console.log("decoded:  @@@@ ", decoded);
+    console.log("error:   ", err);
+
     if (!err) {
+      console.log("!err");
       var obj = {
         name: req.body.name,
         desc: req.body.desc,
@@ -43,16 +49,20 @@ itemRouter.post("/", upload.single("image"), (req, res, next) => {
         user: decoded.id,
         location: req.body.location,
       };
+      console.log("!err@@");
 
       Item.create(obj, (err, item) => {
         if (err) {
+          console.log("err@@:", err);
         } else {
           item
             .save()
             .then((r) => {
+              console.log("item saved  ", r);
               res.status(200).json({ success: true });
             })
             .catch((err) => {
+              console.log("error:  @@", err);
               res.status(500).json(err);
             });
         }
