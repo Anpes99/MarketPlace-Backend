@@ -1,10 +1,13 @@
 MarketPlace backend
 
-features:
+## features:
 
 - REST api endpoints for users, normal and premium items, logging in/out, subscribing, reset for tests.
 
-- api/items query param options:
+-
+
+## api/items query param options:
+
 - location //
 - category // category=category_name
 - premium // gets only premium items
