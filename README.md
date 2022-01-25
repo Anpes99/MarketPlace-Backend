@@ -4,7 +4,7 @@
 
 - REST api endpoints for users, normal and premium items, logging in/out, subscribing, reset for tests.
 
-- Automatic email to users who have favourited an item when the item is updated
+- Automatic email when an item is updated to users who have favourited the item.
 
 ### api/items query param options:
 
