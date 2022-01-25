@@ -87,6 +87,7 @@ itemRouter.post("/", upload.single("image"), async (req, res, next) => {
 });
 
 itemRouter.get("/", async (req, res) => {
+  let searchWord = req.query.searchWord;
   let location = req.query.location;
   let category = req.query.category;
   let premium = req.query.premium;
@@ -107,6 +108,7 @@ itemRouter.get("/", async (req, res) => {
       locale: "en",
     },
   };
+  if (searchWord) params.name = { $regex: searchWord };
   if (location) params.location = location;
   if (category) params.category = category;
   if (premium) params.isPremium = true;

@@ -19,6 +19,7 @@ const itemSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+itemSchema.index({ name: "text" });
 
 itemSchema.plugin(mongoosePaginate);
 
