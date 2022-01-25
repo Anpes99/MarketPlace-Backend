@@ -41,4 +41,39 @@ usersRouter.delete("/:username", async (req, res) => {
   res.json(result);
 });
 
+usersRouter.put("/:username", async (req, res) => {
+  const result = await User.findOne({ username: req.params.username });
+  console.log(result);
+});
+
+usersRouter.post("/:username/favourites/:itemId", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
+  user.favourites.push(req.params.itemId);
+  const result = await User.findOneAndUpdate(
+    { username: req.params.username },
+    { favourites: user.favourites }
+  );
+  res.json(result);
+});
+usersRouter.delete("/:username/favourites/:itemId", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
+  user.favourites = user.favourites.filter(
+    (id) => JSON.stringify(id) !== JSON.stringify(req.params.itemId)
+  );
+  const result = await User.findOneAndUpdate(
+    { username: req.params.username },
+    { favourites: user.favourites }
+  );
+  res.json(result);
+});
+usersRouter.get("/:username/favourites", async (req, res) => {
+  const fields = req.query.fields;
+
+  const user = await User.findOne({ username: req.params.username }).populate(
+    "favourites",
+    fields ? fields.replace(/,/g, " ") : null
+  );
+
+  res.json(user);
+});
 module.exports = usersRouter;
