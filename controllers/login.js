@@ -2,7 +2,6 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const loginRouter = require("express").Router();
 const User = require("../models/user");
-const res = require("express/lib/response");
 
 loginRouter.post("/", async (request, response) => {
   const { body } = request;
@@ -32,7 +31,7 @@ loginRouter.post("/", async (request, response) => {
       .status(200)
       .send({ token, username: user.username, name: user.name, id: user._id });
   } catch (error) {
-    console.log(error);
+    console.log("error2:", error);
     res.status(401).json(error);
   }
 });

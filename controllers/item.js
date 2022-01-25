@@ -7,6 +7,8 @@ const fs = require("fs");
 const { json } = require("body-parser");
 const jwt = require("jsonwebtoken");
 const { shuffle } = require("../utils/utils");
+const User = require("../models/user");
+const { sendEmail } = require("../services/email");
 
 var storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -19,7 +21,7 @@ var storage = multer.diskStorage({
 
 var upload = multer({ storage: storage });
 
-itemRouter.post("/", upload.single("image"), (req, res, next) => {
+itemRouter.post("/", upload.single("image"), async (req, res, next) => {
   console.log("gfdsfdgsdfgfsd");
   console.log("token:  @@@@@@@@@@@@@@@@@", req.token);
   jwt.verify(req.token, process.env.SECRET, (err, decoded) => {
@@ -27,6 +29,16 @@ itemRouter.post("/", upload.single("image"), (req, res, next) => {
     console.log("error:   ", err);
 
     if (!err) {
+      if (path.extname(req.file.originalname).toLowerCase() !== ".png") {
+        return res.status(400).send("Only .png files are accepted.");
+      }
+      let fileUpload = fs.readFileSync(
+        path.join(
+          __dirname.substring(0, __dirname.length - 12) +
+            "/uploads/" +
+            req.file.filename
+        )
+      );
       console.log("!err");
       var obj = {
         name: req.body.name,
@@ -36,13 +48,7 @@ itemRouter.post("/", upload.single("image"), (req, res, next) => {
         img:
           req.file !== undefined
             ? {
-                data: fs.readFileSync(
-                  path.join(
-                    __dirname.substring(0, __dirname.length - 12) +
-                      "/uploads/" +
-                      req.file.filename
-                  )
-                ),
+                data: fileUpload,
                 contentType: "image/png",
               }
             : null,
@@ -57,7 +63,13 @@ itemRouter.post("/", upload.single("image"), (req, res, next) => {
         } else {
           item
             .save()
-            .then((r) => {
+            .then(async (r) => {
+              console.log(item);
+              const user = await User.findById(decoded.id);
+              user.items.push(item._id);
+              const result = await User.findByIdAndUpdate(decoded.id, {
+                items: user.items,
+              });
               console.log("item saved  ", r);
               res.status(200).json({ success: true });
             })
@@ -68,7 +80,8 @@ itemRouter.post("/", upload.single("image"), (req, res, next) => {
         }
       });
     } else {
-      res.json(err);
+      console.log(err);
+      next(err);
     }
   });
 });
@@ -172,37 +185,56 @@ itemRouter.get("/", async (req, res) => {
   });
 });
 
-itemRouter.get("/:itemId", (req, res) => {
+itemRouter.get("/:itemId", async (req, res) => {
   //console.log("",req.params)
-  Item.findOne({ _id: req.params.itemId })
-    .populate("user")
-    .then((result) => {
-      console.log(result);
-      return res.json(result);
-    });
-});
+  const result = await Item.findOne({ _id: req.params.itemId }).populate(
+    "user",
+    "username name"
+  );
 
-itemRouter.get("/user/:username", async (req, res) => {
-  const user = await User.findOne({ username: req.params.username });
-  console.log("user found :  ", user);
-  const userItems = await Item.find({ user: user._id });
-  //console.log("user items found :  ",userItems)
-
-  return res.json(userItems);
+  console.log("gfgs", result);
+  return res.json(result);
 });
 
 itemRouter.delete("/:itemId", async (req, res) => {
-  await premiumVisibility.deleteMany({});
-  await Item.deleteMany({});
   const result = await Item.findByIdAndDelete(req.params.itemId);
 
   return res.status(204).end();
 });
+itemRouter.put("/:itemId", async (req, res) => {
+  const { body } = req;
 
-itemRouter.delete("/", async (req, res) => {
+  const item = await Item.findById(req.params.itemId);
+  console.log(item);
+  if (body.price) item.price = body.price;
+  if (body.location) item.location = body.location;
+  if (body.category) item.category = body.category;
+  if (body.description) item.description = body.description;
+  if (body.name) item.name = body.name;
+
+  await Item.findByIdAndUpdate(req.params.itemId, item);
+
+  const users = await User.find({}, "favourites email");
+  const favouritedUsers = users.filter((user) =>
+    user.favourites.includes(req.params.itemId)
+  );
+  console.log(favouritedUsers);
+  const favouritedEmails = favouritedUsers.map((user) => user.email);
+  console.log("favourited emails:   ", favouritedEmails);
+  /// sends  email to all users that have favourited this item
+  await sendEmail(
+    favouritedEmails.join(),
+    "Update on a favourited item",
+    `there was an update on a one of your favourited items. ${item.name}`
+  ).catch(console.error);
+
+  return res.status(200).end();
+});
+
+/*itemRouter.delete("/", async (req, res) => {
   await Item.deleteMany({});
 
   return res.status(204).end();
-});
+});*/
 
 module.exports = itemRouter;

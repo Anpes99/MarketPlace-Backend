@@ -1,3 +1,5 @@
+var XMLHttpRequest = require("xhr2");
+
 const shuffle = (array) => {
   var copy = [],
     n = array.length,

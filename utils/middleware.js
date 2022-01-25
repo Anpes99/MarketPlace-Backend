@@ -30,7 +30,27 @@ const errorHandler = (error, request, response, next) => {
     console.log(error.message);
     return response.status(400).send({ error: error.message });
   }
-
+  if (error.name === "TokenExpiredError") {
+    console.log(error.message);
+    return response.status(401).send({ error: error.message });
+  }
+  if (error.name === "TypeError") {
+    console.log(error.message);
+    return response.status(500).send({ error: error.message });
+  }
+  if (error.name === "CastError") {
+    console.log(error.message);
+    return response.status(400).send({ error: error.message });
+  }
+  if (error.name === "MongooseServerSelectionError") {
+    console.log(error.message);
+    return response.status(500).send({ error: "Error connecting to database" });
+  }
+  if (error.name === "MongooseError") {
+    console.log(error.message);
+    return response.status(500).send({ error: "Error connecting to database" });
+  }
+  console.log("unknown error: ", error);
   next(error);
 };
 

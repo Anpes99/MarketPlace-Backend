@@ -11,6 +11,7 @@ const userSchema = mongoose.Schema({
   name: String,
   passwordHash: String,
   favourites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Item" }],
+  email: String,
 });
 
 userSchema.set("toJSON", {
