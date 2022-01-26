@@ -9,7 +9,6 @@ const jwt = require("jsonwebtoken");
 const { shuffle } = require("../utils/utils");
 const User = require("../models/user");
 const { sendEmail } = require("../services/email");
-var im = require("imagemagick");
 
 var storage = multer.diskStorage({
   destination: (req, file, cb) => {

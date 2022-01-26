@@ -1,0 +1,10 @@
+
+services:
+  app:
+    image: marketplace
+    build:
+      context: . # The context will pick this directory as the "build context"
+      dockerfile: ./Dockerfile # This will simply tell which dockerfile to read
+    ports: 
+      - 3001:3001
+    container_name: marketplace # This will name the container hello-front-dev
