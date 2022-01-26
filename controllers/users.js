@@ -47,48 +47,6 @@ usersRouter.get("/:username", async (req, res) => {
   res.json(result);
 });
 
-usersRouter.post("/:username/favourites/:itemId", async (req, res) => {
-  const user = await User.findOne({ username: req.params.username });
-  user.favourites.push(req.params.itemId);
-  const result = await User.findOneAndUpdate(
-    { username: req.params.username },
-    { favourites: user.favourites }
-  );
-  res.json(result);
-});
-usersRouter.delete("/:username/favourites/:itemId", async (req, res) => {
-  const user = await User.findOne({ username: req.params.username });
-  user.favourites = user.favourites.filter(
-    (id) => JSON.stringify(id) !== JSON.stringify(req.params.itemId)
-  );
-  const result = await User.findOneAndUpdate(
-    { username: req.params.username },
-    { favourites: user.favourites }
-  );
-  res.json(result);
-});
-usersRouter.get("/:username/favourites", async (req, res) => {
-  const fields = req.query.fields;
-
-  const user = await User.findOne({ username: req.params.username }).populate(
-    "favourites",
-    fields ? fields.replace(/,/g, " ") : null
-  );
-
-  res.json(user);
-});
-
-usersRouter.get("/:username/items", async (req, res) => {
-  const fields = req.query.fields;
-
-  const userItems = await User.findOne(
-    { username: req.params.username },
-    "id"
-  ).populate("items", fields ? fields.replace(/,/g, " ") : null);
-
-  res.json(userItems);
-});
-
 usersRouter.put("/:username", async (req, res) => {
   const { body } = req;
 

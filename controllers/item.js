@@ -9,6 +9,7 @@ const jwt = require("jsonwebtoken");
 const { shuffle } = require("../utils/utils");
 const User = require("../models/user");
 const { sendEmail } = require("../services/email");
+var im = require("imagemagick");
 
 var storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -188,11 +189,13 @@ itemRouter.get("/", async (req, res) => {
 });
 
 itemRouter.get("/:itemId", async (req, res) => {
+  const fields = req.query.fields;
+
   //console.log("",req.params)
-  const result = await Item.findOne({ _id: req.params.itemId }).populate(
-    "user",
-    "username name"
-  );
+  const result = await Item.findOne(
+    { _id: req.params.itemId },
+    fields ? fields.split(" ") : null
+  ).populate("user", "username name");
 
   console.log("gfgs", result);
   return res.json(result);
@@ -231,6 +234,48 @@ itemRouter.put("/:itemId", async (req, res) => {
   ).catch(console.error);
 
   return res.status(200).end();
+});
+
+itemRouter.post("/user/:username/favourites/:itemId", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
+  user.favourites.push(req.params.itemId);
+  const result = await User.findOneAndUpdate(
+    { username: req.params.username },
+    { favourites: user.favourites }
+  );
+  res.json(result);
+});
+itemRouter.delete("/user/:username/favourites/:itemId", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
+  user.favourites = user.favourites.filter(
+    (id) => JSON.stringify(id) !== JSON.stringify(req.params.itemId)
+  );
+  const result = await User.findOneAndUpdate(
+    { username: req.params.username },
+    { favourites: user.favourites }
+  );
+  res.json(result);
+});
+itemRouter.get("/user/:username/favourites", async (req, res) => {
+  const fields = req.query.fields;
+
+  const user = await User.findOne({ username: req.params.username }).populate(
+    "favourites",
+    fields ? fields.replace(/,/g, " ") : null
+  );
+
+  res.json(user);
+});
+
+itemRouter.get("/user/:username/items", async (req, res) => {
+  const fields = req.query.fields;
+
+  const userItems = await User.findOne(
+    { username: req.params.username },
+    "id"
+  ).populate("items", fields ? fields.replace(/,/g, " ") : null);
+
+  res.json(userItems);
 });
 
 /*itemRouter.delete("/", async (req, res) => {
