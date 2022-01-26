@@ -193,7 +193,7 @@ itemRouter.get("/:itemId", async (req, res) => {
   //console.log("",req.params)
   const result = await Item.findOne(
     { _id: req.params.itemId },
-    fields ? fields.split(" ") : null
+    fields ? fields.split(",") : null
   ).populate("user", "username name");
 
   console.log("gfgs", result);
@@ -266,13 +266,12 @@ itemRouter.get("/user/:username/favourites", async (req, res) => {
   res.json(user);
 });
 
-itemRouter.get("/user/:username/items", async (req, res) => {
+itemRouter.get("/user/:username", async (req, res) => {
   const fields = req.query.fields;
 
-  const userItems = await User.findOne(
-    { username: req.params.username },
-    "id"
-  ).populate("items", fields ? fields.replace(/,/g, " ") : null);
+  const userItems = await User.findOne({
+    username: req.params.username,
+  }).populate("items", fields ? fields.replace(/,/g, " ") : null);
 
   res.json(userItems);
 });
